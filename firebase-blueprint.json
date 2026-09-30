@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "User": {
+      "fields": {
+        "email": { "type": "string", "optional": true },
+        "displayName": { "type": "string", "optional": true },
+        "role": { "type": "string" },
+        "state": { "type": "string" },
+        "district": { "type": "string" }
+      }
+    },
+    "Farm": {
+      "fields": {
+        "ownerUid": { "type": "string" },
+        "farmName": { "type": "string" },
+        "district": { "type": "string" },
+        "farmAreaAcres": { "type": "number" },
+        "soilType": { "type": "string" },
+        "currentCrop": { "type": "string" }
+      }
+    },
+    "AKXInsight": {
+      "fields": {
+        "sourceStateId": { "type": "string" },
+        "sourceStateName": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "cropName": { "type": "string" },
+        "biologicalMechanisms": { "type": "array" }
+      }
+    }
+  },
+  "firestore": {
+    "farms": {
+      "entity": "Farm",
+      "indexes": []
+    },
+    "akx_public_insights": {
+      "entity": "AKXInsight",
+      "indexes": []
+    }
+  }
+}

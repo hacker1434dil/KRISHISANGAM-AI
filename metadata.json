@@ -1,0 +1,6 @@
+{
+  "name": "KRISHISANGAM AI",
+  "description": "India's Cooperative AI Network for Climate-Resilient Farming: combines satellite intelligence, soil health, weather, crop history, and Google Gemini AI for localized regenerative farming and cross-state agricultural knowledge exchange.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

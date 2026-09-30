@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Private Farms Collection: Only accessible by the authenticated farm owner
+    match /farms/{farmId} {
+      allow read: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
+      // Prevent ownership transfer on update; ownerUid must remain unchanged
+      allow update: if isAuthenticated()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Private Soil Health Tests
+    match /soil_reports/{reportId} {
+      allow read: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Private Diagnostic History
+    match /diagnoses/{diagnosisId} {
+      allow read: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Public Agri Knowledge Exchange (AKX)
+    // Anonymized aggregated practices shared across states
+    match /akx_public_insights/{insightId} {
+      allow read: if true; // Publicly readable for cross-state learning
+
+      // Strict allowlist validation of permitted fields matching AgriculturalInsight model only
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          'title', 'sourceState', 'sourceDistrict', 'category',
+          'keyFinding', 'waterSavedPct', 'yieldChangePct', 'carbonIncreasePct',
+          'soilTypeOrigin', 'climateZone', 'endorsingFarms',
+          'evidenceSummary', 'verifiedCount', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'title', 'sourceState', 'sourceDistrict', 'category',
+          'keyFinding', 'soilTypeOrigin', 'climateZone',
+          'endorsingFarms', 'evidenceSummary', 'createdAt'
+        ])
+        && request.resource.data.title is string && request.resource.data.title.size() >= 3 && request.resource.data.title.size() <= 200
+        && request.resource.data.sourceState is string && request.resource.data.sourceState.size() >= 2 && request.resource.data.sourceState.size() <= 100
+        && request.resource.data.sourceDistrict is string && request.resource.data.sourceDistrict.size() >= 2 && request.resource.data.sourceDistrict.size() <= 100
+        && request.resource.data.category in ['Water Conservation', 'Pulse Rotation', 'Bio-Pest Control', 'Soil Carbon Enrichment']
+        && request.resource.data.keyFinding is string && request.resource.data.keyFinding.size() >= 10 && request.resource.data.keyFinding.size() <= 2000
+        && request.resource.data.soilTypeOrigin is string && request.resource.data.soilTypeOrigin.size() >= 2 && request.resource.data.soilTypeOrigin.size() <= 100
+        && request.resource.data.climateZone is string && request.resource.data.climateZone.size() >= 2 && request.resource.data.climateZone.size() <= 100
+        && request.resource.data.evidenceSummary is string && request.resource.data.evidenceSummary.size() >= 5 && request.resource.data.evidenceSummary.size() <= 1000
+        && request.resource.data.endorsingFarms is number && request.resource.data.endorsingFarms >= 1 && request.resource.data.endorsingFarms <= 1000000
+        && (!('waterSavedPct' in request.resource.data) || (request.resource.data.waterSavedPct is number && request.resource.data.waterSavedPct >= -100 && request.resource.data.waterSavedPct <= 100))
+        && (!('yieldChangePct' in request.resource.data) || (request.resource.data.yieldChangePct is number && request.resource.data.yieldChangePct >= -100 && request.resource.data.yieldChangePct <= 500))
+        && (!('carbonIncreasePct' in request.resource.data) || (request.resource.data.carbonIncreasePct is number && request.resource.data.carbonIncreasePct >= -100 && request.resource.data.carbonIncreasePct <= 500))
+        && (!('verifiedCount' in request.resource.data) || (request.resource.data.verifiedCount is number && request.resource.data.verifiedCount >= 0))
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() >= 10 && request.resource.data.createdAt.size() <= 50;
+
+      // Immutable peer records: strictly forbid modifying or deleting peer agricultural records
+      allow update, delete: if false;
+    }
+
+    // Participating State Nodes Metadata
+    match /state_nodes/{stateId} {
+      allow read: if true;
+      allow write: if false; // System managed
+    }
+  }
+}
